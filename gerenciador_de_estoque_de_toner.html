@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="TonerStock Pro">
+    <title>TonerStock Pro — Gerenciador de Estoque de Toner</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        cmyk: {
+                            c: '#06b6d4', // Cyan
+                            m: '#ec4899', // Magenta
+                            y: '#eab308', // Yellow
+                            k: '#334155', // Key (Black)
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.8);
+        }
+        .cmyk-gradient {
+            background: linear-gradient(90deg, #06b6d4 0%, #ec4899 35%, #eab308 70%, #1e293b 100%);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.65; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Accent CMYK Bar -->
+    <div class="h-1.5 w-full cmyk-gradient"></div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 gap-3">
+                
+                <!-- Brand -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-800 border border-slate-700 flex items-center justify-center shadow-sm relative overflow-hidden">
+                            <i data-lucide="printer" class="w-5 h-5 text-white z-10"></i>
+                            <div class="absolute bottom-0 inset-x-0 h-1 flex">
+                                <span class="flex-1 bg-cyan-400"></span>
+                                <span class="flex-1 bg-pink-500"></span>
+                                <span class="flex-1 bg-yellow-400"></span>
+                                <span class="flex-1 bg-slate-400"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">TonerStock</h1>
+                                <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">CMYK & Mono</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Controle de Toners, Impressoras e Movimentações</p>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Theme Toggle -->
+                    <button onclick="toggleTheme()" class="sm:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" title="Alternar Tema">
+                        <i data-lucide="sun-moon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Actions & Navigation Tabs -->
+                <div class="flex items-center justify-between sm:justify-end gap-2 flex-wrap">
+                    <!-- Main View Switcher -->
+                    <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/70">
+                        <button id="tab-btn-stock" onclick="switchTab('stock')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm">
+                            <i data-lucide="package" class="w-4 h-4 text-indigo-500"></i>
+                            <span>Estoque</span>
+                        </button>
+                        <button id="tab-btn-history" onclick="switchTab('history')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                            <i data-lucide="history" class="w-4 h-4 text-emerald-500"></i>
+                            <span>Histórico</span>
+                            <span id="history-badge-count" class="ml-0.5 px-1.5 py-0.2 text-[11px] rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">0</span>
+                        </button>
+                        <button id="tab-btn-setup" onclick="switchTab('setup')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                            <i data-lucide="monitor-down" class="w-4 h-4 text-cyan-500"></i>
+                            <span class="hidden md:inline">App Windows & Dados</span>
+                            <span class="md:hidden">App/Backup</span>
+                        </button>
+                    </div>
+
+                    <!-- Add Printer CTA -->
+                    <button onclick="openPrinterModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium text-xs sm:text-sm shadow-sm shadow-indigo-500/20 transition-all cursor-pointer">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Nova Impressora</span>
+                    </button>
+
+                    <!-- Desktop Theme Toggle -->
+                    <button onclick="toggleTheme()" class="hidden sm:inline-flex p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Alternar modo claro/escuro">
+                        <i data-lucide="sun-moon" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- KPI Summary Cards -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <!-- Card 1: Total Printers -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Impressoras Ativas</p>
+                    <p id="kpi-printers" class="text-2xl sm:text-3xl font-bold mt-1 text-slate-900 dark:text-white">0</p>
+                    <p id="kpi-printers-sub" class="text-[11px] text-slate-400 mt-1">0 Mono • 0 Color</p>
+                </div>
+                <div class="w-11 h-11 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                    <i data-lucide="printer" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <!-- Card 2: Total Toners in Stock -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Toners em Estoque</p>
+                    <p id="kpi-total-toners" class="text-2xl sm:text-3xl font-bold mt-1 text-slate-900 dark:text-white">0</p>
+                    <p id="kpi-toners-sub" class="text-[11px] text-slate-400 mt-1">Unidades disponíveis</p>
+                </div>
+                <div class="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <!-- Card 3: Low Stock Alerts -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Estoque Baixo / Zerado</p>
+                    <p id="kpi-low-stock" class="text-2xl sm:text-3xl font-bold mt-1 text-amber-500">0</p>
+                    <p id="kpi-low-sub" class="text-[11px] text-slate-400 mt-1">Itens precisando reposição</p>
+                </div>
+                <div id="kpi-low-icon-box" class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                </div>
+            </div>
+
+            <!-- Card 4: Total Movements -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 dark:text-slate-400">Movimentações</p>
+                    <p id="kpi-movements" class="text-2xl sm:text-3xl font-bold mt-1 text-slate-900 dark:text-white">0</p>
+                    <p id="kpi-movements-sub" class="text-[11px] text-slate-400 mt-1">Entradas e saídas registradas</p>
+                </div>
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 1: STOCK CONTROL ==================== -->
+        <section id="view-stock" class="space-y-5">
+            
+            <!-- Filters & Search Bar -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input 
+                        type="text" 
+                        id="search-printer" 
+                        oninput="renderPrinters()"
+                        placeholder="Buscar por modelo da impressora, setor ou código do toner..." 
+                        class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                </div>
+
+                <!-- Filter Pills -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="setStockFilter('all')" id="filter-btn-all" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-indigo-600 text-white">
+                        Todas
+                    </button>
+                    <button onclick="setStockFilter('mono')" id="filter-btn-mono" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">
+                        Monocromáticas (Preto)
+                    </button>
+                    <button onclick="setStockFilter('color')" id="filter-btn-color" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">
+                        Coloridas (CMYK)
+                    </button>
+                    <button onclick="setStockFilter('low')" id="filter-btn-low" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                        Estoque Baixo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printers Grid Container -->
+            <div id="printers-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="printers-empty" class="hidden bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl p-12 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-4">
+                    <i data-lucide="printer" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">Nenhuma impressora encontrada</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                    Cadastre uma nova impressora escolhendo se ela é Monocromática (apenas Preto) ou Colorida (Preto, Ciano, Magenta e Amarelo).
+                </p>
+                <button onclick="openPrinterModal()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Adicionar Impressora
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: MOVEMENT HISTORY ==================== -->
+        <section id="view-history" class="hidden space-y-4">
+            <!-- History Header & Filters -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                <div class="flex flex-col sm:flex-row gap-2.5 flex-1">
+                    <!-- Search History -->
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input 
+                            type="text" 
+                            id="search-history" 
+                            oninput="renderHistory()"
+                            placeholder="Filtrar por impressora, setor, cor ou observação..." 
+                            class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                    </div>
+
+                    <!-- Filter by Type -->
+                    <select id="filter-history-type" onchange="renderHistory()" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">Todos os Tipos</option>
+                        <option value="IN">Entradas (+ Adição)</option>
+                        <option value="OUT">Saídas (- Retirada)</option>
+                        <option value="INIT">Cadastro Inicial / Ajuste</option>
+                    </select>
+
+                    <!-- Filter by Color -->
+                    <select id="filter-history-color" onchange="renderHistory()" class="px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">Todas as Cores</option>
+                        <option value="K">Preto (Black)</option>
+                        <option value="C">Ciano (Cyan)</option>
+                        <option value="M">Magenta</option>
+                        <option value="Y">Amarelo (Yellow)</option>
+                    </select>
+                </div>
+
+                <!-- Export CSV & Clear History -->
+                <div class="flex items-center gap-2 justify-end">
+                    <button onclick="exportHistoryCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium shadow-sm transition-colors">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Exportar CSV (Excel)</span>
+                    </button>
+                    <button onclick="confirmClearHistory()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-500/10 hover:text-rose-500 text-slate-600 dark:text-slate-400 text-xs font-medium transition-colors">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Limpar Histórico</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Table Container -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <th class="py-3.5 px-4">Data e Hora</th>
+                                <th class="py-3.5 px-4">Operação</th>
+                                <th class="py-3.5 px-4">Impressora / Local</th>
+                                <th class="py-3.5 px-4">Toner (Cor)</th>
+                                <th class="py-3.5 px-4 text-center">Qtd.</th>
+                                <th class="py-3.5 px-4 text-center">Saldo Após</th>
+                                <th class="py-3.5 px-4">Observação / Destino</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty History State -->
+                <div id="history-empty" class="hidden p-12 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 mb-3">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-300">Nenhuma movimentação registrada para este filtro</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Todas as entradas e retiradas de toner aparecerão aqui com data e hora exatas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: WINDOWS APP SETUP & BACKUP ==================== -->
+        <section id="view-setup" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Box 1: Backup & Restore JSON -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                            <i data-lucide="database-backup" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 dark:text-white">Backup e Restauração de Dados</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Salve seus dados em arquivo ou transfira para outro computador</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Este aplicativo salva automaticamente todas as impressoras, quantidades e histórico no armazenamento local (<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">LocalStorage</code>) do seu navegador. Para garantir segurança extra ou levar para outro PC, exporte um arquivo de backup.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <button onclick="exportBackupJSON()" class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Baixar Backup (.JSON)</span>
+                        </button>
+
+                        <label class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 cursor-pointer transition-colors">
+                            <i data-lucide="upload" class="w-4 h-4 text-emerald-500"></i>
+                            <span>Importar Backup (.JSON)</span>
+                            <input type="file" id="import-json-input" accept=".json" onchange="importBackupJSON(event)" class="hidden">
+                        </label>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                        <span class="text-xs text-slate-500">Deseja restaurar os dados de exemplo de fábrica?</span>
+                        <button onclick="confirmResetDemoData()" class="text-xs font-medium text-rose-500 hover:underline flex items-center gap-1">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            Restaurar Padrão
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Box 2: Windows App Shortcut Generator (.BAT) & PWA Instructions -->
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-500">
+                            <i data-lucide="app-window" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 dark:text-white">Atalho Windows (Modo Aplicativo Desktop)</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Abra como um programa nativo do Windows sem barra de endereços</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 space-y-2">
+                            <p class="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-full bg-indigo-600 text-white inline-flex items-center justify-center text-[11px]">1</span>
+                                Opção Automática: Gerar lançador Windows (.BAT)
+                            </p>
+                            <p class="text-slate-500 dark:text-slate-400">
+                                Baixe o arquivo lançador abaixo. Ao dar 2 cliques nele no Windows, o sistema abre em uma janela dedicada de aplicativo via Microsoft Edge ou Chrome:
+                            </p>
+                            <button onclick="downloadWindowsLauncher()" class="mt-1 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-sm transition-colors">
+                                <i data-lucide="terminal" class="w-4 h-4"></i>
+                                <span>Baixar Atalho "Abrir_TonerStock_App.bat"</span>
+                            </button>
+                        </div>
+
+                        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70 space-y-1.5">
+                            <p class="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-full bg-indigo-600 text-white inline-flex items-center justify-center text-[11px]">2</span>
+                                Opção pelo GitHub Pages (Instalar como Web App)
+                            </p>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-500 dark:text-slate-400">
+                                <li>Suba este arquivo <code class="text-indigo-500">index.html</code> em um repositório no GitHub e ative o <strong>GitHub Pages</strong>.</li>
+                                <li>Abra o link no <strong>Microsoft Edge</strong> ou <strong>Google Chrome</strong>.</li>
+                                <li>No menu do navegador (<strong>⋯</strong>) vá em <strong>Aplicativos &rarr; Instalar este site como um aplicativo</strong> e marque <em>"Criar atalho na Área de Trabalho"</em>.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== MODAL 1: ADD / EDIT PRINTER ==================== -->
+    <div id="printer-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl my-8 animate-in fade-in zoom-in-95 duration-150">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500">
+                        <i data-lucide="printer" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="printer-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Cadastrar Impressora</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Defina o modelo e se utiliza toner monocromático ou colorido</p>
+                    </div>
+                </div>
+                <button onclick="closePrinterModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="printer-form" onsubmit="savePrinter(event)" class="space-y-4 mt-4">
+                <input type="hidden" id="printer-id">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                            Nome / Modelo da Impressora *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="printer-name" 
+                            required 
+                            placeholder="Ex: HP LaserJet M404dw, Brother HL-L8360CDW..." 
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                            Setor / Local
+                        </label>
+                        <input 
+                            type="text" 
+                            id="printer-sector" 
+                            placeholder="Ex: Financeiro, RH, TI..." 
+                            class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                    </div>
+                </div>
+
+                <!-- Printer Type Selector (Monochrome vs Color) -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                        Tipo de Impressora *
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Option Monocromática -->
+                        <label id="type-card-mono" onclick="selectPrinterType('mono')" class="cursor-pointer rounded-xl p-3.5 border-2 border-indigo-600 bg-indigo-500/5 flex items-start gap-3 transition-all">
+                            <input type="radio" name="printer-type" value="mono" checked class="mt-1 accent-indigo-600">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white">Monocromática</span>
+                                    <span class="w-4 h-4 rounded-full bg-slate-900 dark:bg-slate-200 border border-slate-400"></span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Utiliza apenas 1 toner <strong>Preto (Black)</strong></p>
+                            </div>
+                        </label>
+
+                        <!-- Option Colorida -->
+                        <label id="type-card-color" onclick="selectPrinterType('color')" class="cursor-pointer rounded-xl p-3.5 border-2 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-start gap-3 transition-all">
+                            <input type="radio" name="printer-type" value="color" class="mt-1 accent-indigo-600">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white">Colorida (CMYK)</span>
+                                    <div class="flex -space-x-1">
+                                        <span class="w-3.5 h-3.5 rounded-full bg-slate-900 border border-white dark:border-slate-900"></span>
+                                        <span class="w-3.5 h-3.5 rounded-full bg-cyan-500 border border-white dark:border-slate-900"></span>
+                                        <span class="w-3.5 h-3.5 rounded-full bg-pink-500 border border-white dark:border-slate-900"></span>
+                                        <span class="w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white dark:border-slate-900"></span>
+                                    </div>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Utiliza 4 toners: <strong>Preto, Ciano, Magenta e Amarelo</strong></p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Dynamic Toner Configuration Box -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                            Configuração de Toners Compatíveis
+                        </span>
+                        <span id="toner-config-subtitle" class="text-[11px] text-slate-500">Defina o modelo/código opcional e o estoque</span>
+                    </div>
+
+                    <div id="toner-fields-container" class="space-y-2.5">
+                        <!-- Dynamically rendered for K (Mono) or K, C, M, Y (Color) -->
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onclick="closePrinterModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Salvar Impressora</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 2: STOCK MOVEMENT (+ ADD / - REMOVE TONER) ==================== -->
+    <div id="movement-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-2.5">
+                    <div id="mov-modal-icon" class="w-9 h-9 rounded-xl flex items-center justify-center">
+                        <!-- Dynamic icon -->
+                    </div>
+                    <div>
+                        <h3 id="mov-modal-title" class="text-base font-bold text-slate-900 dark:text-white">Movimentar Toner</h3>
+                        <p id="mov-modal-subtitle" class="text-xs text-slate-500 dark:text-slate-400">Impressora</p>
+                    </div>
+                </div>
+                <button onclick="closeMovementModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="movement-form" onsubmit="submitMovement(event)" class="space-y-4 mt-4">
+                <input type="hidden" id="mov-printer-id">
+                <input type="hidden" id="mov-color-key">
+                <input type="hidden" id="mov-type">
+
+                <!-- Selected Toner Info Banner -->
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span id="mov-color-dot" class="w-6 h-6 rounded-full shadow-inner border border-white/20 flex-shrink-0"></span>
+                        <div>
+                            <p id="mov-toner-label" class="text-sm font-bold text-slate-900 dark:text-white">Toner Preto</p>
+                            <p id="mov-toner-code" class="text-xs text-slate-500 dark:text-slate-400">Código: Padrão</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Estoque Atual</span>
+                        <span id="mov-current-qty" class="text-lg font-extrabold text-slate-900 dark:text-white">0</span>
+                    </div>
+                </div>
+
+                <!-- Quantity Selector -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-2">
+                        Quantidade a <span id="mov-action-word">Adicionar</span> *
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="adjustMovQty(-1)" class="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-lg font-bold">
+                            -
+                        </button>
+                        <input 
+                            type="number" 
+                            id="mov-qty" 
+                            min="1" 
+                            max="999" 
+                            value="1" 
+                            required
+                            class="flex-1 text-center py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                        <button type="button" onclick="adjustMovQty(1)" class="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center text-lg font-bold">
+                            +
+                        </button>
+                    </div>
+                    <!-- Quick quantity chips -->
+                    <div class="flex items-center gap-1.5 mt-2">
+                        <span class="text-[11px] text-slate-400 mr-1">Rápido:</span>
+                        <button type="button" onclick="setMovQty(1)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500/20 hover:text-indigo-400">1 un.</button>
+                        <button type="button" onclick="setMovQty(2)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500/20 hover:text-indigo-400">2 un.</button>
+                        <button type="button" onclick="setMovQty(5)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500/20 hover:text-indigo-400">5 un.</button>
+                        <button type="button" onclick="setMovQty(10)" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500/20 hover:text-indigo-400">10 un.</button>
+                    </div>
+                </div>
+
+                <!-- Observation / Reason Input -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300 mb-1.5">
+                        Observação / Responsável (Opcional)
+                    </label>
+                    <input 
+                        type="text" 
+                        id="mov-note" 
+                        placeholder="Ex: Troca preventiva, Compra NF 402, Solicitado por Ana..." 
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                </div>
+
+                <!-- Error message inside modal if trying to withdraw more than available -->
+                <p id="mov-error-msg" class="hidden text-xs font-medium text-rose-500 bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5"></p>
+
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeMovementModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="mov-submit-btn" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer">
+                        <span>Confirmar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL 3: CUSTOM CONFIRMATION DIALOG ==================== -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto">
+                <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 id="confirm-title" class="text-base font-bold text-slate-900 dark:text-white">Confirmar Ação</h3>
+                <p id="confirm-message" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tem certeza que deseja realizar esta operação?</p>
+            </div>
+            <div class="flex items-center justify-center gap-2.5 pt-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200">
+                    Cancelar
+                </button>
+                <button id="confirm-action-btn" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800/80 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+            <span>TonerStock Pro • Armazenamento Persistente Local</span>
+            <span id="live-clock" class="font-mono text-[11px]"></span>
+        </div>
+    </footer>
+
+    <!-- ==================== APPLICATION LOGIC ==================== -->
+    <script>
+        // --- Storage Keys ---
+        const STORAGE_PRINTERS = 'tonerstock_printers_v1';
+        const STORAGE_HISTORY  = 'tonerstock_history_v1';
+        const STORAGE_THEME    = 'tonerstock_theme_v1';
+
+        // --- Toner Color Metadata (CMYK) ---
+        const TONER_COLORS = {
+            K: {
+                key: 'K',
+                name: 'Preto (Black)',
+                short: 'Preto',
+                dotClass: 'bg-slate-900 dark:bg-slate-200 ring-2 ring-slate-400/30',
+                badgeBg: 'bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 border-slate-700',
+                barColor: 'bg-slate-800 dark:bg-slate-300',
+                borderAccent: 'border-l-slate-800 dark:border-l-slate-300',
+                placeholderCode: 'Ex: TN-1060 / CF258A'
+            },
+            C: {
+                key: 'C',
+                name: 'Ciano (Cyan)',
+                short: 'Ciano',
+                dotClass: 'bg-cyan-500 ring-2 ring-cyan-500/30',
+                badgeBg: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border-cyan-500/30',
+                barColor: 'bg-cyan-500',
+                borderAccent: 'border-l-cyan-500',
+                placeholderCode: 'Ex: TN-419C / W2021A'
+            },
+            M: {
+                key: 'M',
+                name: 'Magenta',
+                short: 'Magenta',
+                dotClass: 'bg-pink-500 ring-2 ring-pink-500/30',
+                badgeBg: 'bg-pink-500/15 text-pink-600 dark:text-pink-300 border-pink-500/30',
+                barColor: 'bg-pink-500',
+                borderAccent: 'border-l-pink-500',
+                placeholderCode: 'Ex: TN-419M / W2023A'
+            },
+            Y: {
+                key: 'Y',
+                name: 'Amarelo (Yellow)',
+                short: 'Amarelo',
+                dotClass: 'bg-yellow-400 ring-2 ring-yellow-400/30',
+                badgeBg: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border-yellow-500/30',
+                barColor: 'bg-yellow-400',
+                borderAccent: 'border-l-yellow-400',
+                placeholderCode: 'Ex: TN-419Y / W2022A'
+            }
+        };
+
+        // --- Application State ---
+        let printers = [];
+        let historyLogs = [];
+        let currentStockFilter = 'all';
+
+        // --- Formatting Helpers ---
+        function formatDateTimeBR(isoString) {
+            const d = isoString ? new Date(isoString) : new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function generateId() {
+            return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+        }
+
+        // --- Load / Save State ---
+        function loadData() {
+            try {
+                const savedPrinters = localStorage.getItem(STORAGE_PRINTERS);
+                const savedHistory = localStorage.getItem(STORAGE_HISTORY);
+
+                if (savedPrinters) {
+                    printers = JSON.parse(savedPrinters);
+                } else {
+                    seedDemoData();
+                }
+
+                if (savedHistory) {
+                    historyLogs = JSON.parse(savedHistory);
+                }
+            } catch (e) {
+                console.error('Erro ao carregar LocalStorage:', e);
+                seedDemoData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_PRINTERS, JSON.stringify(printers));
+            localStorage.setItem(STORAGE_HISTORY, JSON.stringify(historyLogs));
+            updateKPIs();
+        }
+
+        // --- Initial Demo Data ---
+        function seedDemoData() {
+            const now = new Date();
+            const earlier = new Date(now.getTime() - 1000 * 60 * 140).toISOString();
+            const yesterday = new Date(now.getTime() - 1000 * 60 * 60 * 22).toISOString();
+
+            printers = [
+                {
+                    id: 'prt_demo_mono',
+                    name: 'Brother DCP-L2540DW',
+                    sector: 'Administrativo / Financeiro',
+                    type: 'mono',
+                    toners: {
+                        K: { code: 'TN-2370', qty: 4, min: 2 }
+                    }
+                },
+                {
+                    id: 'prt_demo_color',
+                    name: 'HP Color LaserJet Pro M479fdw',
+                    sector: 'Marketing & Diretoria',
+                    type: 'color',
+                    toners: {
+                        K: { code: 'W2020A (414A)', qty: 3, min: 1 },
+                        C: { code: 'W2021A (414A)', qty: 2, min: 1 },
+                        M: { code: 'W2023A (414A)', qty: 1, min: 1 },
+                        Y: { code: 'W2022A (414A)', qty: 2, min: 1 }
+                    }
+                }
+            ];
+
+            historyLogs = [
+                {
+                    id: generateId(),
+                    timestamp: yesterday,
+                    type: 'INIT',
+                    printerId: 'prt_demo_mono',
+                    printerName: 'Brother DCP-L2540DW',
+                    sector: 'Administrativo / Financeiro',
+                    color: 'K',
+                    tonerCode: 'TN-2370',
+                    qty: 5,
+                    balanceAfter: 5,
+                    note: 'Estoque inicial cadastrado'
+                },
+                {
+                    id: generateId(),
+                    timestamp: earlier,
+                    type: 'OUT',
+                    printerId: 'prt_demo_mono',
+                    printerName: 'Brother DCP-L2540DW',
+                    sector: 'Administrativo / Financeiro',
+                    color: 'K',
+                    tonerCode: 'TN-2370',
+                    qty: 1,
+                    balanceAfter: 4,
+                    note: 'Substituição de toner vazio no setor Financeiro'
+                },
+                {
+                    id: generateId(),
+                    timestamp: now.toISOString(),
+                    type: 'IN',
+                    printerId: 'prt_demo_color',
+                    printerName: 'HP Color LaserJet Pro M479fdw',
+                    sector: 'Marketing & Diretoria',
+                    color: 'C',
+                    tonerCode: 'W2021A (414A)',
+                    qty: 2,
+                    balanceAfter: 2,
+                    note: 'Entrada de Nota Fiscal #1084'
+                }
+            ];
+
+            saveData();
+        }
+
+        // --- KPI Calculation ---
+        function updateKPIs() {
+            const totalPrinters = printers.length;
+            const monoCount = printers.filter(p => p.type === 'mono').length;
+            const colorCount = printers.filter(p => p.type === 'color').length;
+
+            let totalToners = 0;
+            let lowStockCount = 0;
+
+            printers.forEach(p => {
+                Object.values(p.toners).forEach(t => {
+                    totalToners += Number(t.qty || 0);
+                    const minThreshold = t.min !== undefined ? Number(t.min) : 1;
+                    if (Number(t.qty) <= minThreshold) {
+                        lowStockCount++;
+                    }
+                });
+            });
+
+            document.getElementById('kpi-printers').textContent = totalPrinters;
+            document.getElementById('kpi-printers-sub').textContent = `${monoCount} Monocromática(s) • ${colorCount} Colorida(s)`;
+            document.getElementById('kpi-total-toners').textContent = totalToners;
+            document.getElementById('kpi-low-stock').textContent = lowStockCount;
+            document.getElementById('kpi-movements').textContent = historyLogs.length;
+            document.getElementById('history-badge-count').textContent = historyLogs.length;
+
+            const lowCardText = document.getElementById('kpi-low-stock');
+            if (lowStockCount > 0) {
+                lowCardText.className = 'text-2xl sm:text-3xl font-bold mt-1 text-rose-500 animate-pulse-subtle';
+            } else {
+                lowCardText.className = 'text-2xl sm:text-3xl font-bold mt-1 text-emerald-500';
+            }
+        }
+
+        // --- Navigation Tabs ---
+        function switchTab(tab) {
+            const tabs = ['stock', 'history', 'setup'];
+            tabs.forEach(t => {
+                const section = document.getElementById(`view-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tab) {
+                    section.classList.remove('hidden');
+                    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm';
+                } else {
+                    section.classList.add('hidden');
+                    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+                }
+            });
+
+            if (tab === 'stock') renderPrinters();
+            if (tab === 'history') renderHistory();
+            lucide.createIcons();
+        }
+
+        // --- Filter Printers ---
+        function setStockFilter(filter) {
+            currentStockFilter = filter;
+            const filters = ['all', 'mono', 'color', 'low'];
+            filters.forEach(f => {
+                const btn = document.getElementById(`filter-btn-${f}`);
+                if (f === filter) {
+                    btn.className = 'px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-indigo-600 text-white flex items-center gap-1';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1';
+                }
+            });
+            renderPrinters();
+        }
+
+        // --- Render Printers Grid ---
+        function renderPrinters() {
+            const grid = document.getElementById('printers-grid');
+            const emptyState = document.getElementById('printers-empty');
+            const query = (document.getElementById('search-printer').value || '').trim().toLowerCase();
+
+            const filtered = printers.filter(p => {
+                // Check filter pill
+                if (currentStockFilter === 'mono' && p.type !== 'mono') return false;
+                if (currentStockFilter === 'color' && p.type !== 'color') return false;
+                if (currentStockFilter === 'low') {
+                    const hasLow = Object.values(p.toners).some(t => Number(t.qty) <= (t.min ?? 1));
+                    if (!hasLow) return false;
+                }
+
+                // Check search query
+                if (!query) return true;
+                const matchName = p.name.toLowerCase().includes(query);
+                const matchSector = (p.sector || '').toLowerCase().includes(query);
+                const matchCode = Object.values(p.toners).some(t => (t.code || '').toLowerCase().includes(query));
+                return matchName || matchSector || matchCode;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            grid.innerHTML = filtered.map(printer => {
+                const isColor = printer.type === 'color';
+                const colorKeys = isColor ? ['K', 'C', 'M', 'Y'] : ['K'];
+
+                const tonerRowsHTML = colorKeys.map(k => {
+                    const meta = TONER_COLORS[k];
+                    const tonerData = printer.toners[k] || { code: '', qty: 0, min: 1 };
+                    const qty = Number(tonerData.qty || 0);
+                    const min = Number(tonerData.min ?? 1);
+
+                    let statusBadge = '';
+                    if (qty === 0) {
+                        statusBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-rose-500/15 text-rose-500 border border-rose-500/30">Sem Estoque</span>`;
+                    } else if (qty <= min) {
+                        statusBadge = `<span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30">Estoque Baixo</span>`;
+                    }
+
+                    return `
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 border-l-4 ${meta.borderAccent} flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <span class="w-5 h-5 rounded-full ${meta.dotClass} flex-shrink-0"></span>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-sm font-bold text-slate-900 dark:text-white">${meta.name}</span>
+                                        ${tonerData.code ? `<span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-200/70 dark:bg-slate-700/70 text-slate-700 dark:text-slate-300">${escapeHtml(tonerData.code)}</span>` : ''}
+                                        ${statusBadge}
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Mínimo ideal: ${min} un.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 dark:border-slate-700/60">
+                                <!-- Quantity Display -->
+                                <div class="text-left sm:text-right mr-1">
+                                    <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Disponível</span>
+                                    <span class="text-xl font-extrabold ${qty === 0 ? 'text-rose-500' : qty <= min ? 'text-amber-500' : 'text-slate-900 dark:text-white'}">${qty}</span>
+                                    <span class="text-xs text-slate-400">un.</span>
+                                </div>
+
+                                <!-- Action Buttons: - Retirar / + Adicionar -->
+                                <div class="flex items-center gap-1.5">
+                                    <button 
+                                        onclick="openMovementModal('${printer.id}', '${k}', 'OUT')" 
+                                        ${qty <= 0 ? 'disabled' : ''}
+                                        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${qty <= 0 ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed opacity-50' : 'bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 border border-rose-500/20 cursor-pointer'}"
+                                        title="Retirar toner do estoque"
+                                    >
+                                        <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>
+                                        <span>Retirar</span>
+                                    </button>
+
+                                    <button 
+                                        onclick="openMovementModal('${printer.id}', '${k}', 'IN')" 
+                                        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
+                                        title="Adicionar toner ao estoque"
+                                    >
+                                        <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                        <span>Adicionar</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                        <div>
+                            <!-- Card Header -->
+                            <div class="flex items-start justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-200 flex-shrink-0 mt-0.5">
+                                        <i data-lucide="printer" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h3 class="text-base font-bold text-slate-900 dark:text-white">${escapeHtml(printer.name)}</h3>
+                                            ${isColor ? `
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                                                    <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                                    <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                                                    <span class="w-2 h-2 rounded-full bg-slate-900 dark:bg-white"></span>
+                                                    Colorida
+                                                </span>
+                                            ` : `
+                                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                                    <span class="w-2 h-2 rounded-full bg-slate-900 dark:bg-slate-300"></span>
+                                                    Monocromática
+                                                </span>
+                                            `}
+                                        </div>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                                            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                                            <span>${printer.sector ? escapeHtml(printer.sector) : 'Setor Geral'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Edit / Delete Printer Actions -->
+                                <div class="flex items-center gap-1">
+                                    <button onclick="openPrinterModal('${printer.id}')" class="p-2 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Editar Impressora">
+                                        <i data-lucide="settings-2" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="confirmDeletePrinter('${printer.id}')" class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" title="Excluir Impressora">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Toner List -->
+                            <div class="space-y-2.5 mt-3.5">
+                                ${tonerRowsHTML}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- Printer Modal (Create & Edit) ---
+        function selectPrinterType(type, existingToners = null) {
+            const radios = document.getElementsByName('printer-type');
+            radios.forEach(r => { r.checked = (r.value === type); });
+
+            const cardMono = document.getElementById('type-card-mono');
+            const cardColor = document.getElementById('type-card-color');
+
+            if (type === 'mono') {
+                cardMono.className = 'cursor-pointer rounded-xl p-3.5 border-2 border-indigo-600 bg-indigo-500/5 flex items-start gap-3 transition-all';
+                cardColor.className = 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-start gap-3 transition-all';
+            } else {
+                cardColor.className = 'cursor-pointer rounded-xl p-3.5 border-2 border-indigo-600 bg-indigo-500/5 flex items-start gap-3 transition-all';
+                cardMono.className = 'cursor-pointer rounded-xl p-3.5 border-2 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 flex items-start gap-3 transition-all';
+            }
+
+            renderTonerConfigInputs(type, existingToners);
+        }
+
+        function renderTonerConfigInputs(type, existingToners = null) {
+            const container = document.getElementById('toner-fields-container');
+            const keys = type === 'color' ? ['K', 'C', 'M', 'Y'] : ['K'];
+
+            container.innerHTML = keys.map(k => {
+                const meta = TONER_COLORS[k];
+                const prevCode = existingToners && existingToners[k] ? existingToners[k].code : '';
+                const prevQty  = existingToners && existingToners[k] !== undefined ? existingToners[k].qty : 2;
+                const prevMin  = existingToners && existingToners[k] !== undefined ? existingToners[k].min : 1;
+
+                return `
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                        <div class="sm:col-span-4 flex items-center gap-2.5">
+                            <span class="w-4 h-4 rounded-full ${meta.dotClass} flex-shrink-0"></span>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">${meta.name}</span>
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label class="block text-[10px] uppercase text-slate-400 mb-0.5">Código / Referência</label>
+                            <input 
+                                type="text" 
+                                id="toner-code-${k}" 
+                                value="${escapeHtml(prevCode)}"
+                                placeholder="${meta.placeholderCode}" 
+                                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] uppercase text-slate-400 mb-0.5">Qtd. Atual</label>
+                            <input 
+                                type="number" 
+                                id="toner-qty-${k}" 
+                                min="0" 
+                                max="999" 
+                                value="${prevQty}" 
+                                required
+                                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] uppercase text-slate-400 mb-0.5">Alerta Mín.</label>
+                            <input 
+                                type="number" 
+                                id="toner-min-${k}" 
+                                min="0" 
+                                max="99" 
+                                value="${prevMin}" 
+                                required
+                                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openPrinterModal(editId = null) {
+            const modal = document.getElementById('printer-modal');
+            const title = document.getElementById('printer-modal-title');
+            const idInput = document.getElementById('printer-id');
+            const nameInput = document.getElementById('printer-name');
+            const sectorInput = document.getElementById('printer-sector');
+
+            if (editId) {
+                const p = printers.find(item => item.id === editId);
+                if (!p) return;
+                title.textContent = 'Editar Impressora';
+                idInput.value = p.id;
+                nameInput.value = p.name;
+                sectorInput.value = p.sector || '';
+                selectPrinterType(p.type, p.toners);
+            } else {
+                title.textContent = 'Cadastrar Nova Impressora';
+                idInput.value = '';
+                nameInput.value = '';
+                sectorInput.value = '';
+                selectPrinterType('mono');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => nameInput.focus(), 50);
+            lucide.createIcons();
+        }
+
+        function closePrinterModal() {
+            const modal = document.getElementById('printer-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function savePrinter(event) {
+            event.preventDefault();
+            const id = document.getElementById('printer-id').value;
+            const name = document.getElementById('printer-name').value.trim();
+            const sector = document.getElementById('printer-sector').value.trim();
+            const typeRadio = document.querySelector('input[name="printer-type"]:checked');
+            const type = typeRadio ? typeRadio.value : 'mono';
+
+            if (!name) return;
+
+            const keys = type === 'color' ? ['K', 'C', 'M', 'Y'] : ['K'];
+            const tonersObj = {};
+
+            keys.forEach(k => {
+                const code = (document.getElementById(`toner-code-${k}`)?.value || '').trim();
+                const qty = Math.max(0, parseInt(document.getElementById(`toner-qty-${k}`)?.value || '0', 10));
+                const min = Math.max(0, parseInt(document.getElementById(`toner-min-${k}`)?.value || '1', 10));
+                tonersObj[k] = { code, qty, min };
+            });
+
+            if (id) {
+                // Edit existing printer
+                const index = printers.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    const oldPrinter = printers[index];
+                    // Log quantity adjustments if changed manually during edit
+                    keys.forEach(k => {
+                        const oldQty = oldPrinter.toners[k] ? Number(oldPrinter.toners[k].qty) : 0;
+                        const newQty = tonersObj[k].qty;
+                        if (oldQty !== newQty) {
+                            const diff = newQty - oldQty;
+                            historyLogs.unshift({
+                                id: generateId(),
+                                timestamp: new Date().toISOString(),
+                                type: diff > 0 ? 'IN' : 'OUT',
+                                printerId: id,
+                                printerName: name,
+                                sector: sector || 'Geral',
+                                color: k,
+                                tonerCode: tonersObj[k].code,
+                                qty: Math.abs(diff),
+                                balanceAfter: newQty,
+                                note: 'Ajuste manual via edição de impressora'
+                            });
+                        }
+                    });
+
+                    printers[index] = { id, name, sector, type, toners: tonersObj };
+                    showToast(`Impressora "${name}" atualizada com sucesso!`, 'success');
+                }
+            } else {
+                // New Printer
+                const newId = generateId();
+                printers.unshift({
+                    id: newId,
+                    name,
+                    sector,
+                    type,
+                    toners: tonersObj
+                });
+
+                // Record initial stock in history
+                keys.forEach(k => {
+                    if (tonersObj[k].qty > 0) {
+                        historyLogs.unshift({
+                            id: generateId(),
+                            timestamp: new Date().toISOString(),
+                            type: 'INIT',
+                            printerId: newId,
+                            printerName: name,
+                            sector: sector || 'Geral',
+                            color: k,
+                            tonerCode: tonersObj[k].code,
+                            qty: tonersObj[k].qty,
+                            balanceAfter: tonersObj[k].qty,
+                            note: 'Estoque inicial no cadastro da impressora'
+                        });
+                    }
+                });
+
+                showToast(`Impressora "${name}" cadastrada!`, 'success');
+            }
+
+            saveData();
+            renderPrinters();
+            closePrinterModal();
+        }
+
+        // --- Stock Movement Modal (+ Entrada / - Saída) ---
+        function openMovementModal(printerId, colorKey, movType) {
+            const printer = printers.find(p => p.id === printerId);
+            if (!printer) return;
+
+            const toner = printer.toners[colorKey];
+            const meta = TONER_COLORS[colorKey];
+
+            document.getElementById('mov-printer-id').value = printerId;
+            document.getElementById('mov-color-key').value = colorKey;
+            document.getElementById('mov-type').value = movType;
+
+            const modalIcon = document.getElementById('mov-modal-icon');
+            const modalTitle = document.getElementById('mov-modal-title');
+            const modalSubtitle = document.getElementById('mov-modal-subtitle');
+            const actionWord = document.getElementById('mov-action-word');
+            const submitBtn = document.getElementById('mov-submit-btn');
+            const errorMsg = document.getElementById('mov-error-msg');
+
+            errorMsg.classList.add('hidden');
+            document.getElementById('mov-qty').value = 1;
+            document.getElementById('mov-note').value = '';
+
+            modalSubtitle.textContent = `${printer.name} (${printer.sector || 'Setor Geral'})`;
+            document.getElementById('mov-color-dot').className = `w-6 h-6 rounded-full ${meta.dotClass} flex-shrink-0`;
+            document.getElementById('mov-toner-label').textContent = `Toner ${meta.name}`;
+            document.getElementById('mov-toner-code').textContent = toner.code ? `Código: ${toner.code}` : 'Sem código específico';
+            document.getElementById('mov-current-qty').textContent = `${toner.qty} un.`;
+
+            if (movType === 'IN') {
+                modalIcon.className = 'w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center';
+                modalIcon.innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5"></i>`;
+                modalTitle.textContent = 'Entrada de Toner (+ Adicionar)';
+                actionWord.textContent = 'Adicionar na Entrada';
+                submitBtn.className = 'inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer';
+                submitBtn.innerHTML = `<i data-lucide="plus" class="w-4 h-4"></i><span>Confirmar Entrada</span>`;
+            } else {
+                modalIcon.className = 'w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center';
+                modalIcon.innerHTML = `<i data-lucide="minus-circle" class="w-5 h-5"></i>`;
+                modalTitle.textContent = 'Saída de Toner (- Retirar)';
+                actionWord.textContent = 'Retirar do Estoque';
+                submitBtn.className = 'inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer';
+                submitBtn.innerHTML = `<i data-lucide="minus" class="w-4 h-4"></i><span>Confirmar Retirada</span>`;
+            }
+
+            const modal = document.getElementById('movement-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+            setTimeout(() => document.getElementById('mov-note').focus(), 50);
+        }
+
+        function closeMovementModal() {
+            const modal = document.getElementById('movement-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function adjustMovQty(delta) {
+            const input = document.getElementById('mov-qty');
+            const current = parseInt(input.value || '1', 10);
+            input.value = Math.max(1, current + delta);
+        }
+
+        function setMovQty(val) {
+            document.getElementById('mov-qty').value = val;
+        }
+
+        function submitMovement(event) {
+            event.preventDefault();
+            const printerId = document.getElementById('mov-printer-id').value;
+            const colorKey = document.getElementById('mov-color-key').value;
+            const movType = document.getElementById('mov-type').value;
+            const qty = parseInt(document.getElementById('mov-qty').value || '0', 10);
+            const note = document.getElementById('mov-note').value.trim();
+            const errorMsg = document.getElementById('mov-error-msg');
+
+            const printer = printers.find(p => p.id === printerId);
+            if (!printer || !printer.toners[colorKey] || qty <= 0) return;
+
+            const currentStock = Number(printer.toners[colorKey].qty || 0);
+
+            if (movType === 'OUT' && qty > currentStock) {
+                errorMsg.textContent = `Estoque insuficiente! Você possui apenas ${currentStock} unidade(s) deste toner.`;
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            const newBalance = movType === 'IN' ? currentStock + qty : currentStock - qty;
+            printer.toners[colorKey].qty = newBalance;
+
+            // Create History Entry with exact timestamp
+            const meta = TONER_COLORS[colorKey];
+            historyLogs.unshift({
+                id: generateId(),
+                timestamp: new Date().toISOString(),
+                type: movType,
+                printerId: printer.id,
+                printerName: printer.name,
+                sector: printer.sector || 'Setor Geral',
+                color: colorKey,
+                tonerCode: printer.toners[colorKey].code || '',
+                qty: qty,
+                balanceAfter: newBalance,
+                note: note || (movType === 'IN' ? 'Reposição de estoque' : 'Retirada para uso na impressora')
+            });
+
+            saveData();
+            renderPrinters();
+            closeMovementModal();
+
+            const actionLabel = movType === 'IN' ? `+${qty} adicionado(s)` : `-${qty} retirado(s)`;
+            showToast(`Toner ${meta.short} (${printer.name}): ${actionLabel}. Saldo: ${newBalance} un.`, movType === 'IN' ? 'success' : 'info');
+        }
+
+        // --- Render History Table ---
+        function renderHistory() {
+            const tbody = document.getElementById('history-table-body');
+            const emptyState = document.getElementById('history-empty');
+            const search = (document.getElementById('search-history').value || '').trim().toLowerCase();
+            const typeFilter = document.getElementById('filter-history-type').value;
+            const colorFilter = document.getElementById('filter-history-color').value;
+
+            const filtered = historyLogs.filter(item => {
+                if (typeFilter !== 'all' && item.type !== typeFilter) return false;
+                if (colorFilter !== 'all' && item.color !== colorFilter) return false;
+
+                if (!search) return true;
+                const matchPrinter = (item.printerName || '').toLowerCase().includes(search);
+                const matchSector = (item.sector || '').toLowerCase().includes(search);
+                const matchNote = (item.note || '').toLowerCase().includes(search);
+                const matchCode = (item.tonerCode || '').toLowerCase().includes(search);
+                return matchPrinter || matchSector || matchNote || matchCode;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(log => {
+                const meta = TONER_COLORS[log.color] || TONER_COLORS.K;
+                let badgeHTML = '';
+                let qtyFormatted = '';
+
+                if (log.type === 'IN') {
+                    badgeHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"><i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i> Entrada</span>`;
+                    qtyFormatted = `<span class="font-bold text-emerald-600 dark:text-emerald-400">+${log.qty}</span>`;
+                } else if (log.type === 'OUT') {
+                    badgeHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"><i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> Saída</span>`;
+                    qtyFormatted = `<span class="font-bold text-rose-600 dark:text-rose-400">-${log.qty}</span>`;
+                } else {
+                    badgeHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Inicial</span>`;
+                    qtyFormatted = `<span class="font-bold text-indigo-500">${log.qty}</span>`;
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3.5 px-4 font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                            ${formatDateTimeBR(log.timestamp)}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            ${badgeHTML}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <p class="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">${escapeHtml(log.printerName)}</p>
+                            <p class="text-[11px] text-slate-400">${escapeHtml(log.sector || '')}</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <div class="inline-flex items-center gap-2">
+                                <span class="w-3.5 h-3.5 rounded-full ${meta.dotClass}"></span>
+                                <div>
+                                    <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">${meta.short}</span>
+                                    ${log.tonerCode ? `<span class="block text-[10px] font-mono text-slate-400">${escapeHtml(log.tonerCode)}</span>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center text-sm whitespace-nowrap">
+                            ${qtyFormatted}
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300">${log.balanceAfter} un.</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">
+                            ${escapeHtml(log.note || '-')}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- Custom Confirmation Modal ---
+        let pendingConfirmAction = null;
+
+        function openConfirmModal(title, message, callback) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            pendingConfirmAction = callback;
+
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingConfirmAction = null;
+        }
+
+        document.getElementById('confirm-action-btn').addEventListener('click', () => {
+            if (typeof pendingConfirmAction === 'function') {
+                pendingConfirmAction();
+            }
+            closeConfirmModal();
+        });
+
+        function confirmDeletePrinter(printerId) {
+            const p = printers.find(item => item.id === printerId);
+            if (!p) return;
+            openConfirmModal(
+                'Excluir Impressora?',
+                `Deseja remover a impressora "${p.name}" do painel de estoque? O histórico passado será mantido.`,
+                () => {
+                    printers = printers.filter(item => item.id !== printerId);
+                    saveData();
+                    renderPrinters();
+                    showToast(`Impressora "${p.name}" removida.`, 'info');
+                }
+            );
+        }
+
+        function confirmClearHistory() {
+            if (historyLogs.length === 0) {
+                showToast('O histórico já está vazio.', 'info');
+                return;
+            }
+            openConfirmModal(
+                'Limpar Todo o Histórico?',
+                'Todas as entradas e saídas registradas serão apagadas permanentemente. O saldo atual dos toners será mantido.',
+                () => {
+                    historyLogs = [];
+                    saveData();
+                    renderHistory();
+                    showToast('Histórico de movimentações limpo!', 'info');
+                }
+            );
+        }
+
+        function confirmResetDemoData() {
+            openConfirmModal(
+                'Restaurar Dados de Exemplo?',
+                'Isso substituirá as impressoras e o histórico atuais pelos dados iniciais de demonstração.',
+                () => {
+                    seedDemoData();
+                    renderPrinters();
+                    renderHistory();
+                    showToast('Dados de demonstração restaurados!', 'success');
+                }
+            );
+        }
+
+        // --- Export History to CSV (Excel Compatible with UTF-8 BOM) ---
+        function exportHistoryCSV() {
+            if (historyLogs.length === 0) {
+                showToast('Não há registros no histórico para exportar.', 'info');
+                return;
+            }
+
+            const headers = ['Data e Hora', 'Tipo', 'Impressora', 'Setor', 'Cor do Toner', 'Codigo Toner', 'Quantidade', 'Saldo Apos', 'Observacao'];
+            const rows = historyLogs.map(h => {
+                const tipoLabel = h.type === 'IN' ? 'ENTRADA' : h.type === 'OUT' ? 'SAIDA' : 'INICIAL';
+                const colorName = TONER_COLORS[h.color] ? TONER_COLORS[h.color].short : h.color;
+                return [
+                    formatDateTimeBR(h.timestamp),
+                    tipoLabel,
+                    `"${(h.printerName || '').replace(/"/g, '""')}"`,
+                    `"${(h.sector || '').replace(/"/g, '""')}"`,
+                    colorName,
+                    `"${(h.tonerCode || '').replace(/"/g, '""')}"`,
+                    h.type === 'OUT' ? `-${h.qty}` : `+${h.qty}`,
+                    h.balanceAfter,
+                    `"${(h.note || '').replace(/"/g, '""')}"`
+                ].join(';');
+            });
+
+            const csvContent = '\uFEFF' + [headers.join(';'), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `historico_toners_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Planilha CSV gerada com sucesso!', 'success');
+        }
+
+        // --- Backup JSON Export & Import ---
+        function exportBackupJSON() {
+            const payload = {
+                app: 'TonerStock Pro',
+                exportedAt: new Date().toISOString(),
+                printers,
+                historyLogs
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_tonerstock_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Arquivo de backup (.JSON) salvo!', 'success');
+        }
+
+        function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data.printers) && Array.isArray(data.historyLogs)) {
+                        printers = data.printers;
+                        historyLogs = data.historyLogs;
+                        saveData();
+                        renderPrinters();
+                        renderHistory();
+                        showToast('Backup restaurado com sucesso!', 'success');
+                    } else {
+                        showToast('Arquivo JSON inválido.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Erro ao ler o arquivo de backup.', 'error');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // --- Windows Launcher (.BAT) Generator ---
+        function downloadWindowsLauncher() {
+            const currentUrl = window.location.href;
+            const batContent = [
+                '@echo off',
+                'title Iniciar TonerStock Pro',
+                `start msedge --app="${currentUrl}" || start chrome --app="${currentUrl}"`,
+                'exit'
+            ].join('\r\n');
+
+            const blob = new Blob([batContent], { type: 'application/bat' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Abrir_TonerStock_App.bat';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Atalho Windows (.BAT) baixado! Coloque na Área de Trabalho.', 'success');
+        }
+
+        // --- Theme Switcher ---
+        function initTheme() {
+            const saved = localStorage.getItem(STORAGE_THEME);
+            if (saved === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem(STORAGE_THEME, 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem(STORAGE_THEME, 'dark');
+            }
+        }
+
+        // --- Toast Notifications ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let colorClasses = 'bg-slate-900 dark:bg-slate-800 border-slate-700 text-white';
+            let iconName = 'check-circle-2';
+            let iconColor = 'text-emerald-400';
+
+            if (type === 'info') {
+                iconName = 'info';
+                iconColor = 'text-cyan-400';
+            } else if (type === 'error') {
+                iconName = 'alert-triangle';
+                iconColor = 'text-rose-400';
+            }
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${colorClasses} text-xs font-medium transition-all duration-300`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor} flex-shrink-0"></i>
+                <span class="flex-1">${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        // --- Utility: Escape HTML ---
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // --- Live Clock ---
+        function updateClock() {
+            const el = document.getElementById('live-clock');
+            if (el) el.textContent = formatDateTimeBR();
+        }
+
+        // --- Initialize App ---
+        window.onload = function () {
+            initTheme();
+            loadData();
+            updateKPIs();
+            renderPrinters();
+            updateClock();
+            setInterval(updateClock, 1000);
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
